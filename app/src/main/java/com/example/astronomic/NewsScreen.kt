@@ -3,9 +3,6 @@ package com.example.astronomic
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
@@ -23,72 +20,52 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 fun NewsScreen(viewModel: NewsViewModel = viewModel()) {
     val newsItems by viewModel.newsItems.collectAsState()
 
-    // Используем простое сеточное расположение без LazyVerticalGrid
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(0.dp)
+            .background(MaterialTheme.colorScheme.background)
     ) {
-        // Первая строка (2 новости)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            // Новость 1
-            Box(
+            NewsQuarter(
+                newsItem = newsItems[0],
+                onLike = { viewModel.likeNews(0) },
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-            ) {
-                NewsQuarter(
-                    newsItem = newsItems[0],
-                    onLike = { viewModel.likeNews(0) }
-                )
-            }
+            )
 
-            // Новость 2
-            Box(
+            NewsQuarter(
+                newsItem = newsItems[1],
+                onLike = { viewModel.likeNews(1) },
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-            ) {
-                NewsQuarter(
-                    newsItem = newsItems[1],
-                    onLike = { viewModel.likeNews(1) }
-                )
-            }
+            )
         }
 
-        // Вторая строка (2 новости)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
         ) {
-            // Новость 3
-            Box(
+            NewsQuarter(
+                newsItem = newsItems[2],
+                onLike = { viewModel.likeNews(2) },
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-            ) {
-                NewsQuarter(
-                    newsItem = newsItems[2],
-                    onLike = { viewModel.likeNews(2) }
-                )
-            }
-
-            // Новость 4
-            Box(
+            )
+            NewsQuarter(
+                newsItem = newsItems[3],
+                onLike = { viewModel.likeNews(3) },
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-            ) {
-                NewsQuarter(
-                    newsItem = newsItems[3],
-                    onLike = { viewModel.likeNews(3) }
-                )
-            }
+            )
         }
     }
 }
@@ -96,12 +73,12 @@ fun NewsScreen(viewModel: NewsViewModel = viewModel()) {
 @Composable
 fun NewsQuarter(
     newsItem: NewsItem,
-    onLike: () -> Unit
+    onLike: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(4.dp),  // Небольшой отступ между карточками
+        modifier = modifier
+            .padding(4.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
@@ -109,53 +86,57 @@ fun NewsQuarter(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.surface)
         ) {
-            // 90% - контент новости
+            // Контент новости (90%)
             Box(
                 modifier = Modifier
                     .weight(9f)
                     .fillMaxWidth()
-                    .padding(12.dp)
+                    .padding(8.dp)
             ) {
                 Column {
                     Text(
                         text = newsItem.news.title,
-                        fontSize = 20.sp,
+                        fontSize = if (isLandscape()) 16.sp else 14.sp,
                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
+                        maxLines = 2
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = newsItem.news.content,
-                        fontSize = 16.sp,
-                        maxLines = 6
+                        fontSize = if (isLandscape()) 14.sp else 12.sp,
+                        maxLines = if (isLandscape()) 5 else 3
                     )
                 }
             }
 
-            // 10% - лайки (кликабельно)
+            // Лайки (10%)
             Row(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.primaryContainer)
                     .clickable { onLike() }
-                    .padding(horizontal = 16.dp),
+                    .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "❤️ ЛАЙК",
-                    fontSize = 18.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    text = "❤️",
+                    fontSize = if (isLandscape()) 16.sp else 14.sp
                 )
                 Text(
                     text = newsItem.likes.toString(),
-                    fontSize = 22.sp,
-                    fontWeight = androidx.compose.ui.text.font.FontWeight.ExtraBold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    fontSize = if (isLandscape()) 16.sp else 14.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                 )
             }
         }
     }
+}
+
+
+@Composable
+fun isLandscape(): Boolean {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    return configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
 }

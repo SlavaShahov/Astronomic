@@ -22,13 +22,10 @@ class NewsViewModel : ViewModel() {
         News(10, "🪐 СПУТНИК ЮПИТЕРА", "Астрономы открыли 80-й спутник планеты-гиганта")
     )
 
-    // Хранилище лайков для всех новостей (ИНИЦИАЛИЗИРУЕМ ЗДЕСЬ)
+    // Хранилище лайков для всех новостей
     private val savedLikesMap = mutableMapOf<Int, Int>()
-
-    // Текущие 4 новости на экране
     private val _newsItems = MutableStateFlow(
         allNews.shuffled().take(4).map { news ->
-            // Пытаемся восстановить лайки из сохраненных данных
             val savedLikes = savedLikesMap[news.id] ?: 0
             NewsItem(news, savedLikes)
         }
@@ -67,23 +64,17 @@ class NewsViewModel : ViewModel() {
         val currentList = _newsItems.value.toMutableList()
         val randomIndex = (0..3).random()
 
-        // Получаем ID новостей, которые уже есть на экране
         val currentNewsIds = currentList.map { it.news.id }.toSet()
 
-        // Выбираем случайную новость, которой нет на экране
         val availableNews = allNews.filter { it.id !in currentNewsIds }
 
         if (availableNews.isNotEmpty()) {
             val randomNews = availableNews.random()
-
-            // Берем сохраненные лайки для этой новости (или 0)
             val savedLikes = savedLikesMap[randomNews.id] ?: 0
 
-            // Заменяем новость, но с сохраненными лайками
             currentList[randomIndex] = NewsItem(randomNews, savedLikes)
             _newsItems.value = currentList
         } else {
-            // Если все новости уже на экране, просто обновляем с сохраненными лайками
             val randomNews = allNews.random()
             val savedLikes = savedLikesMap[randomNews.id] ?: 0
             currentList[randomIndex] = NewsItem(randomNews, savedLikes)
