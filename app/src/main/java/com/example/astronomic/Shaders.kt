@@ -2,7 +2,7 @@ package com.example.astronomic
 
 object Shaders {
 
-    // Вершинный шейдер
+    // Вершинный шейдер - передает текстурные координаты
     val vertexShaderCode = """
         attribute vec4 vPosition;
         attribute vec2 inputTextureCoordinate;
@@ -15,14 +15,20 @@ object Shaders {
         }
     """.trimIndent()
 
-    // Фрагментный шейдер
+    // Фрагментный шейдер - принимает текстурные координаты
     val fragmentShaderCode = """
         precision mediump float;
         varying vec2 textureCoordinate;
         uniform sampler2D inputImageTexture;
+        uniform vec4 vColor;
+        uniform bool useTexture;
         
         void main() {
-            gl_FragColor = texture2D(inputImageTexture, textureCoordinate);
+            if (useTexture) {
+                gl_FragColor = texture2D(inputImageTexture, textureCoordinate);
+            } else {
+                gl_FragColor = vColor;
+            }
         }
     """.trimIndent()
 }

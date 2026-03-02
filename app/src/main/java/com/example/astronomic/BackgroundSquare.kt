@@ -10,7 +10,7 @@ class BackgroundSquare {
     private val vertexBuffer: FloatBuffer
     private val textureBuffer: FloatBuffer
 
-    // Квадрат на всю сцену, но с правильным соотношением
+    // Квадрат в NDC координатах (от -1 до 1)
     private val squareVertices = floatArrayOf(
         -1.0f, -1.0f, 0.0f,  // левый нижний
         1.0f, -1.0f, 0.0f,  // правый нижний
@@ -18,12 +18,12 @@ class BackgroundSquare {
         1.0f,  1.0f, 0.0f   // правый верхний
     )
 
-    // Текстурные координаты (весь спектр)
+    // Текстурные координаты
     private val textureVertices = floatArrayOf(
-        0.0f, 0.0f,  // левый нижний (исправлено: было 0,1)
-        1.0f, 0.0f,  // правый нижний
-        0.0f, 1.0f,  // левый верхний
-        1.0f, 1.0f   // правый верхний
+        0.0f, 1.0f,  // левый нижний
+        1.0f, 1.0f,  // правый нижний
+        0.0f, 0.0f,  // левый верхний
+        1.0f, 0.0f   // правый верхний
     )
 
     init {

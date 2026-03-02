@@ -17,6 +17,7 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private lateinit var sunSphere: TexturedSphere
     private lateinit var planetSphere: TexturedSphere
     private lateinit var moonSphere: TexturedSphere
+    private lateinit var selectionCube: SelectionCube
     private lateinit var textureLoader: TextureLoader
 
     private val projectionMatrix = FloatArray(16)
@@ -31,22 +32,48 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val maxCameraDistance = 80f
 
     private val textureIds = mutableMapOf<String, Int>()
+    private var selectedPlanetIndex = 0
+    private var showInfo = false
+    private var infoText = ""
+    private var infoTimer = 0
 
     private val planets = listOf(
-        Planet("Солнце", 2.5f, 0f, 0f, 0.5f, "sun.jpg"),        // 0.5 градуса за кадр = 30 град/сек
-        Planet("Меркурий", 0.4f, 5f, 0.004f, 0.8f, "mercury.jpg"), // 48 град/сек
-        Planet("Венера", 0.6f, 7f, 0.003f, 0.7f, "venus.jpg"),    // 42 град/сек
-        Planet("Земля", 0.6f, 9f, 0.0025f, 0.6f, "earth.jpg", true), // 36 град/сек
-        Planet("Марс", 0.5f, 11f, 0.002f, 0.6f, "mars.jpg"),      // 36 град/сек
-        Planet("Юпитер", 1.3f, 15f, 0.001f, 1.2f, "jupiter.jpg"), // 72 град/сек (очень быстро)
-        Planet("Сатурн", 1.1f, 19f, 0.0008f, 1.0f, "saturn.jpg"), // 60 град/сек
-        Planet("Уран", 0.9f, 23f, 0.0005f, 0.8f, "uranus.jpg"),   // 48 град/сек
-        Planet("Нептун", 0.9f, 27f, 0.0004f, 0.8f, "neptune.jpg") // 48 град/сек
+        Planet("Солнце", 2.5f, 0f, 0f, 0.5f, "sun.jpg"),
+        Planet("Меркурий", 0.4f, 5f, 0.004f, 0.8f, "mercury.jpg"),
+        Planet("Венера", 0.6f, 7f, 0.003f, 0.7f, "venus.jpg"),
+        Planet("Земля", 0.6f, 9f, 0.0025f, 0.6f, "earth.jpg", true),
+        Planet("Марс", 0.5f, 11f, 0.002f, 0.6f, "mars.jpg"),
+        Planet("Юпитер", 1.3f, 15f, 0.001f, 1.2f, "jupiter.jpg"),
+        Planet("Сатурн", 1.1f, 19f, 0.0008f, 1.0f, "saturn.jpg"),
+        Planet("Уран", 0.9f, 23f, 0.0005f, 0.8f, "uranus.jpg"),
+        Planet("Нептун", 0.9f, 27f, 0.0004f, 0.8f, "neptune.jpg")
     )
 
     private val orbitAngles = FloatArray(planets.size) { 0f }
     private val rotationAngles = FloatArray(planets.size) { 0f }
     private var moonAngle = 0f
+
+    fun selectPlanet(index: Int) {
+        selectedPlanetIndex = index
+    }
+
+    fun showPlanetInfo(index: Int) {
+        val planet = planets[index]
+        infoText = "${planet.name}\n" +
+                "Размер: ${planet.size}\n" +
+                "Расстояние: ${planet.distance}\n" +
+                (if (planet.hasMoon) "Есть Луна" else "Нет лун")
+        showInfo = true
+        infoTimer = 300
+    }
+
+    fun getPlanetInfo(index: Int): String {
+        val planet = planets[index]
+        return "${planet.name}\n" +
+                "Размер: ${planet.size}\n" +
+                "Расстояние: ${planet.distance}\n" +
+                (if (planet.hasMoon) "✓ Есть Луна" else "✗ Нет лун")
+    }
 
     fun handlePinch(scaleFactor: Float) {
         cameraDistance = (cameraDistance / scaleFactor).coerceIn(minCameraDistance, maxCameraDistance)
@@ -60,20 +87,28 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
+        GLES20.glEnable(GLES20.GL_BLEND)
+        GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
 
         ShaderManager.initShaders()
         ShaderManager.useProgram()
 
-        backgroundSquare = BackgroundSquare()
         backgroundTextureLoader = TextureLoader(context)
         backgroundTextureId = backgroundTextureLoader.loadTextureFromAsset("galaxy.jpg")
+
         if (backgroundTextureId == 0) {
             backgroundTextureId = backgroundTextureLoader.createProceduralTexture()
+            android.util.Log.d("DEBUG", "Создана процедурная текстура, ID: $backgroundTextureId")
+        } else {
+            android.util.Log.d("DEBUG", "Загружена текстура galaxy.jpg, ID: $backgroundTextureId")
         }
+
+        backgroundSquare = BackgroundSquare()
 
         sunSphere = TexturedSphere(64)
         planetSphere = TexturedSphere(48)
         moonSphere = TexturedSphere(32)
+        selectionCube = SelectionCube()
 
         textureLoader = TextureLoader(context)
 
@@ -98,27 +133,39 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         drawBackground()
         drawSolarSystem()
+
+        if (showInfo) {
+            infoTimer--
+            if (infoTimer <= 0) {
+                showInfo = false
+            }
+        }
     }
 
     private fun drawBackground() {
-        GLES20.glDepthMask(false)
         GLES20.glDisable(GLES20.GL_DEPTH_TEST)
+        GLES20.glDepthMask(false)
 
         val orthoMatrix = FloatArray(16)
         Matrix.orthoM(orthoMatrix, 0, -1f, 1f, -1f, 1f, -1f, 1f)
 
+        val savedViewMatrix = viewMatrix.clone()
         Matrix.setIdentityM(viewMatrix, 0)
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, backgroundTextureId)
+
+        val useTextureHandle = GLES20.glGetUniformLocation(ShaderManager.program, "useTexture")
+        GLES20.glUniform1i(useTextureHandle, 1)
 
         Matrix.setIdentityM(modelMatrix, 0)
         Matrix.multiplyMM(mvpMatrix, 0, orthoMatrix, 0, modelMatrix, 0)
 
         backgroundSquare.draw(mvpMatrix)
 
-        GLES20.glEnable(GLES20.GL_DEPTH_TEST)
+        System.arraycopy(savedViewMatrix, 0, viewMatrix, 0, 16)
         GLES20.glDepthMask(true)
+        GLES20.glEnable(GLES20.GL_DEPTH_TEST)
     }
 
     private fun drawSolarSystem() {
@@ -137,9 +184,7 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
             val planet = planets[i]
 
             orbitAngles[i] += planet.speed
-
             rotationAngles[i] += planet.rotationSpeed
-            // Чтобы вращение не ушло в бесконечность, ограничиваем 360
             if (rotationAngles[i] > 360f) rotationAngles[i] -= 360f
 
             if (i == 0) {
@@ -156,12 +201,13 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
                 }
             }
         }
+
+        drawSelectionCube()
     }
 
     private fun drawPlanet(planet: Planet, x: Float, z: Float, rotation: Float) {
         Matrix.setIdentityM(modelMatrix, 0)
         Matrix.translateM(modelMatrix, 0, x, 0f, z)
-
         Matrix.rotateM(modelMatrix, 0, rotation, 0f, 1f, 0f)
         Matrix.scaleM(modelMatrix, 0, planet.size, planet.size, planet.size)
 
@@ -169,6 +215,10 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0)
 
         val textureId = textureIds[planet.name] ?: 0
+
+        val useTextureHandle = GLES20.glGetUniformLocation(ShaderManager.program, "useTexture")
+        GLES20.glUniform1i(useTextureHandle, 1)
+
         if (planet.name == "Солнце") {
             sunSphere.draw(mvpMatrix, textureId)
         } else {
@@ -193,6 +243,35 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0)
 
         val moonTextureId = textureIds["Луна"] ?: 0
+
+        val useTextureHandle = GLES20.glGetUniformLocation(ShaderManager.program, "useTexture")
+        GLES20.glUniform1i(useTextureHandle, 1)
+
         moonSphere.draw(mvpMatrix, moonTextureId)
+    }
+
+    private fun drawSelectionCube() {
+        val planet = planets[selectedPlanetIndex]
+
+        val posX: Float
+        val posZ: Float
+
+        if (selectedPlanetIndex == 0) {
+            posX = 0f
+            posZ = 0f
+        } else {
+            val angle = orbitAngles[selectedPlanetIndex]
+            posX = planet.distance * cos(angle.toDouble()).toFloat()
+            posZ = planet.distance * sin(angle.toDouble()).toFloat()
+        }
+
+        Matrix.setIdentityM(modelMatrix, 0)
+        Matrix.translateM(modelMatrix, 0, posX, 0f, posZ)
+        Matrix.scaleM(modelMatrix, 0, planet.size * 1.3f, planet.size * 1.3f, planet.size * 1.3f)
+
+        Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0)
+        Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0)
+
+        selectionCube.draw(mvpMatrix)
     }
 }

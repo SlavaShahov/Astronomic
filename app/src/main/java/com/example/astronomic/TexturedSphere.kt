@@ -7,7 +7,6 @@ import java.nio.FloatBuffer
 import java.nio.ShortBuffer
 import kotlin.math.*
 
-
 class TexturedSphere(private val segments: Int) {
 
     private val vertexBuffer: FloatBuffer
@@ -19,7 +18,6 @@ class TexturedSphere(private val segments: Int) {
         val texCoords = mutableListOf<Float>()
         val indices = mutableListOf<Short>()
 
-        // Генерируем сферу
         for (i in 0..segments) {
             val phi = PI * i / segments
 
@@ -34,8 +32,6 @@ class TexturedSphere(private val segments: Int) {
                 vertices.add(y)
                 vertices.add(z)
 
-                // Текстурные координаты (u, v)
-                // u = j/segments (горизонталь), v = i/segments (вертикаль)
                 texCoords.add(j.toFloat() / segments)
                 texCoords.add(i.toFloat() / segments)
             }
@@ -77,6 +73,10 @@ class TexturedSphere(private val segments: Int) {
     }
 
     fun draw(mvpMatrix: FloatArray, textureId: Int) {
+        // Включаем использование текстуры
+        val useTextureHandle = GLES20.glGetUniformLocation(ShaderManager.program, "useTexture")
+        GLES20.glUniform1i(useTextureHandle, 1)
+
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
 
@@ -85,8 +85,10 @@ class TexturedSphere(private val segments: Int) {
         GLES20.glVertexAttribPointer(positionHandle, 3, GLES20.GL_FLOAT, false, 12, vertexBuffer)
 
         val texCoordHandle = GLES20.glGetAttribLocation(ShaderManager.program, "inputTextureCoordinate")
-        GLES20.glEnableVertexAttribArray(texCoordHandle)
-        GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer)
+        if (texCoordHandle >= 0) {
+            GLES20.glEnableVertexAttribArray(texCoordHandle)
+            GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 8, textureBuffer)
+        }
 
         val mvpMatrixHandle = GLES20.glGetUniformLocation(ShaderManager.program, "uMVPMatrix")
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
@@ -95,6 +97,8 @@ class TexturedSphere(private val segments: Int) {
             GLES20.GL_UNSIGNED_SHORT, indexBuffer)
 
         GLES20.glDisableVertexAttribArray(positionHandle)
-        GLES20.glDisableVertexAttribArray(texCoordHandle)
+        if (texCoordHandle >= 0) {
+            GLES20.glDisableVertexAttribArray(texCoordHandle)
+        }
     }
 }
