@@ -106,4 +106,61 @@ class TextureLoader(private val context: Context) {
 
         return textureIds[0]
     }
+
+    fun createRingTexture(): Int {
+        val textureIds = IntArray(1)
+        GLES20.glGenTextures(1, textureIds, 0)
+
+        if (textureIds[0] == 0) return 0
+
+        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureIds[0])
+
+        val width = 512
+        val height = 64
+        val pixels = IntArray(width * height)
+
+        for (i in pixels.indices) {
+            val x = i % width
+            val y = i / width
+
+            // Создаем полоски разной прозрачности
+            var alpha = 180
+            var r = 220
+            var g = 200
+            var b = 180
+
+            // Чередующиеся полосы разного цвета и прозрачности
+            when ((x / 50) % 5) {
+                0 -> { // более светлая полоса
+                    r = 240; g = 230; b = 210; alpha = 200
+                }
+                1 -> { // более темная полоса
+                    r = 200; g = 180; b = 160; alpha = 160
+                }
+                2 -> { // с рыжеватым оттенком
+                    r = 230; g = 200; b = 170; alpha = 180
+                }
+                3 -> { // с сероватым оттенком
+                    r = 210; g = 190; b = 170; alpha = 140
+                }
+                4 -> { // почти прозрачная полоса
+                    r = 220; g = 200; b = 180; alpha = 100
+                }
+            }
+
+            // Добавляем шум/текстуру
+            val noise = (Math.random() * 30 - 15).toInt()
+            r = (r + noise).coerceIn(100, 255)
+            g = (g + noise).coerceIn(100, 255)
+            b = (b + noise).coerceIn(100, 255)
+
+            pixels[i] = (alpha shl 24) or (r shl 16) or (g shl 8) or b
+        }
+
+        val buffer = java.nio.IntBuffer.wrap(pixels)
+        GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0,
+            GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buffer)
+
+        return textureIds[0]
+    }
 }

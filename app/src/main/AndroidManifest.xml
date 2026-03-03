@@ -26,6 +26,11 @@
         android:name=".OpenGLActivity"
         android:exported="false" />
 
+        <activity
+            android:name=".PlanetInfoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Astronomic" />
+
 </application>
 
     </manifest>

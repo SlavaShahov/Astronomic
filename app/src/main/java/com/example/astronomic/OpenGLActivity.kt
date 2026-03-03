@@ -1,5 +1,6 @@
 package com.example.astronomic
 
+import android.content.Intent
 import android.opengl.GLSurfaceView
 import android.os.Bundle
 import android.view.MotionEvent
@@ -9,29 +10,22 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.viewmodel.compose.viewModel
 
 class OpenGLActivity : AppCompatActivity() {
 
     private lateinit var glSurfaceView: GLSurfaceView
     private lateinit var renderer: PlanetRenderer
 
-    // Для обработки жестов
     private lateinit var scaleGestureDetector: ScaleGestureDetector
     private var lastTouchX = 0f
     private var lastTouchY = 0f
     private var isDragging = false
-
-    // Выбранная планета
-    private var selectedPlanetIndex = 0  // 0 = Солнце
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,46 +40,47 @@ class OpenGLActivity : AppCompatActivity() {
         glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
 
         setupTouchListeners()
+
         val mainLayout = FrameLayout(this)
         mainLayout.addView(glSurfaceView)
 
         val composeView = ComposeView(this)
         composeView.setContent {
             MaterialTheme {
-                // Кнопки поверх
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
+                    // Кнопки внизу
                     Row(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(16.dp),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Кнопка ВЛЕВО
+                        // Влево (предыдущий объект)
                         Button(
                             onClick = {
-                                selectedPlanetIndex = (selectedPlanetIndex - 1 + 9) % 9
-                                renderer.selectPlanet(selectedPlanetIndex)
+                                renderer.prevObject()
                             }
                         ) {
                             Text("←")
                         }
 
-                        // Кнопка ИНФОРМАЦИЯ
+                        // Информация о выбранном объекте
                         Button(
                             onClick = {
-                                renderer.showPlanetInfo(selectedPlanetIndex)
+                                val intent = Intent(this@OpenGLActivity, PlanetInfoActivity::class.java)
+                                intent.putExtra(PlanetInfoActivity.EXTRA_PLANET_NAME, renderer.getSelectedObjectName())
+                                startActivity(intent)
                             }
                         ) {
                             Text("ℹ️")
                         }
 
-                        // Кнопка ВПРАВО
+                        // Вправо (следующий объект)
                         Button(
                             onClick = {
-                                selectedPlanetIndex = (selectedPlanetIndex + 1) % 9
-                                renderer.selectPlanet(selectedPlanetIndex)
+                                renderer.nextObject()
                             }
                         ) {
                             Text("→")
@@ -96,7 +91,6 @@ class OpenGLActivity : AppCompatActivity() {
         }
 
         mainLayout.addView(composeView)
-
         setContentView(mainLayout)
     }
 

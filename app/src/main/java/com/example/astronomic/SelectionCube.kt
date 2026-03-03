@@ -11,7 +11,6 @@ class SelectionCube {
     private val vertexBuffer: FloatBuffer
     private val indexBuffer: ShortBuffer
 
-    // Вершины куба
     private val cubeVertices = floatArrayOf(
         -1.0f, -1.0f,  1.0f,
         1.0f, -1.0f,  1.0f,
@@ -57,10 +56,27 @@ class SelectionCube {
         val mvpMatrixHandle = GLES20.glGetUniformLocation(ShaderManager.program, "uMVPMatrix")
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
 
+        // БОЛЕЕ ПРОЗРАЧНЫЙ КУБ (альфа 0.2 вместо 0.3)
         val colorHandle = GLES20.glGetUniformLocation(ShaderManager.program, "vColor")
-        GLES20.glUniform4fv(colorHandle, 1, floatArrayOf(1.0f, 1.0f, 1.0f, 0.3f), 0)
+        GLES20.glUniform4fv(colorHandle, 1, floatArrayOf(1.0f, 1.0f, 1.0f, 0.15f), 0)
 
-        GLES20.glDrawElements(GLES20.GL_LINES, drawOrder.size, GLES20.GL_UNSIGNED_SHORT, indexBuffer)
+        // Рисуем как каркас (линии), а не сплошной
+        GLES20.glLineWidth(2.0f) // Толщина линий
+
+        // Рисуем только ребра куба
+        val edgeIndices = shortArrayOf(
+            0, 1, 1, 3, 3, 2, 2, 0,  // передняя грань
+            4, 5, 5, 7, 7, 6, 6, 4,  // задняя грань
+            0, 4, 1, 5, 3, 7, 2, 6    // соединяем грани
+        )
+
+        val edgeBuffer = ByteBuffer.allocateDirect(edgeIndices.size * 2)
+        edgeBuffer.order(ByteOrder.nativeOrder())
+        val edgeIndexBuffer = edgeBuffer.asShortBuffer()
+        edgeIndexBuffer.put(edgeIndices)
+        edgeIndexBuffer.position(0)
+
+        GLES20.glDrawElements(GLES20.GL_LINES, edgeIndices.size, GLES20.GL_UNSIGNED_SHORT, edgeIndexBuffer)
 
         GLES20.glDisableVertexAttribArray(positionHandle)
     }
