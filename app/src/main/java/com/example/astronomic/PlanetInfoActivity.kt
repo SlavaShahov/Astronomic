@@ -1,6 +1,7 @@
 package com.example.astronomic
 
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.opengl.GLSurfaceView
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -16,14 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import android.graphics.BitmapFactory
-import androidx.compose.foundation.background
-import androidx.compose.ui.graphics.Color
 
 class PlanetInfoActivity : ComponentActivity() {
 
@@ -178,7 +177,7 @@ class PlanetInfoActivity : ComponentActivity() {
     }
 }
 
-// ЭКРАН ДЛЯ ЛУНЫ (с кнопкой 3D)
+// ЭКРАН ДЛЯ ЛУНЫ
 @Composable
 fun MoonInfoScreen(planetInfo: PlanetInfo) {
     val context = LocalContext.current
@@ -235,7 +234,6 @@ fun MoonInfoScreen(planetInfo: PlanetInfo) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // ХАРАКТЕРИСТИКИ ПОЛОСКОЙ
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(4.dp)
@@ -246,16 +244,15 @@ fun MoonInfoScreen(planetInfo: PlanetInfo) {
                 Text("ХАРАКТЕРИСТИКИ", fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
                 InfoRow("Диаметр:", planetInfo.diameter)
-                InfoRow("Расстояние от Солнца:", planetInfo.distanceFromSun)
+                InfoRow("Расстояние от Земли:", planetInfo.distanceFromSun)
                 InfoRow("Орбитальный период:", planetInfo.orbitalPeriod)
-                InfoRow("Спутники:", planetInfo.moons.toString())
                 InfoRow("Температура:", planetInfo.temperature)
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // КНОПКА 3D МОДЕЛИ
+        // КНОПКА ДЛЯ 3D МОДЕЛИ ЛУНЫ
         Button(
             onClick = {
                 val intent = Intent(context, Moon3DActivity::class.java)
@@ -266,15 +263,14 @@ fun MoonInfoScreen(planetInfo: PlanetInfo) {
                 .height(56.dp),
             shape = RoundedCornerShape(8.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = Color(0xFF5A5A5A)
             )
         ) {
             Text(
-                text = "🚀 ПОСМОТРЕТЬ 3D МОДЕЛЬ ЛУНЫ",
+                text = "🌕 ПОСМОТРЕТЬ 3D МОДЕЛЬ ЛУНЫ",
                 fontSize = 16.sp,
                 color = Color.White
             )
         }
     }
 }
-

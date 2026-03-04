@@ -1,5 +1,6 @@
 package com.example.astronomic
 
+import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -7,7 +8,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.asImageBitmap
@@ -16,7 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.graphics.BitmapFactory
-import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun PlanetInfoScreen(planetInfo: PlanetInfo) {
@@ -88,6 +88,31 @@ fun PlanetInfoScreen(planetInfo: PlanetInfo) {
                 InfoRow("Орбитальный период:", planetInfo.orbitalPeriod)
                 InfoRow("Спутники:", planetInfo.moons.toString())
                 InfoRow("Температура:", planetInfo.temperature)
+            }
+        }
+
+        // КНОПКА ДЛЯ НЕПТУНА (ТОЛЬКО ЕСЛИ ЭТО НЕПТУН)
+        if (planetInfo.name.contains("НЕПТУН", ignoreCase = true)) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    val intent = Intent(context, NeptuneWaveActivity::class.java)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(8.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF1A4B8C)
+                )
+            ) {
+                Text(
+                    text = "🌊 НЕПТУН С ВОЛНАМИ",
+                    fontSize = 16.sp,
+                    color = Color.White
+                )
             }
         }
     }
