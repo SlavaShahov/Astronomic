@@ -13,12 +13,6 @@ class SaturnRing {
     private val textureBuffer: FloatBuffer
     private val indexBuffer: ShortBuffer
 
-    /**
-     * @param innerRadius внутренний радиус кольца
-     * @param outerRadius внешний радиус кольца
-     * @param segments количество сегментов по окружности
-     * @param ringCount количество концентрических колец
-     */
     constructor(innerRadius: Float, outerRadius: Float, segments: Int, ringCount: Int = 5) {
         val vertices = mutableListOf<Float>()
         val texCoords = mutableListOf<Float>()
@@ -26,36 +20,31 @@ class SaturnRing {
 
         val ringStep = (outerRadius - innerRadius) / ringCount
 
-        // Создаем несколько концентрических колец
         for (ring in 0 until ringCount) {
             val r1 = innerRadius + ring * ringStep
-            val r2 = r1 + ringStep * 0.8f // промежутки между кольцами
+            val r2 = r1 + ringStep * 0.8f
 
             for (i in 0..segments) {
                 val angle = 2 * PI * i / segments
                 val cosA = cos(angle.toDouble()).toFloat()
                 val sinA = sin(angle.toDouble()).toFloat()
 
-                // Внешняя вершина этого кольца
                 vertices.add(r2 * cosA)
                 vertices.add(0f)
                 vertices.add(r2 * sinA)
 
-                // Внутренняя вершина этого кольца
                 vertices.add(r1 * cosA)
                 vertices.add(0f)
                 vertices.add(r1 * sinA)
 
-                // Текстурные координаты
                 val u = i.toFloat() / segments
-                texCoords.add(u)  // внешняя
+                texCoords.add(u)
                 texCoords.add(0f)
-                texCoords.add(u)  // внутренняя
+                texCoords.add(u)
                 texCoords.add(1f)
             }
         }
 
-        // Индексы для каждого кольца
         for (ring in 0 until ringCount) {
             val ringOffset = ring * (segments + 1) * 2
 
@@ -73,21 +62,18 @@ class SaturnRing {
             }
         }
 
-        // Буфер вершин
         val vertexByteBuffer = ByteBuffer.allocateDirect(vertices.size * 4)
         vertexByteBuffer.order(ByteOrder.nativeOrder())
         vertexBuffer = vertexByteBuffer.asFloatBuffer()
         vertexBuffer.put(vertices.toFloatArray())
         vertexBuffer.position(0)
 
-        // Буфер текстурных координат
         val texByteBuffer = ByteBuffer.allocateDirect(texCoords.size * 4)
         texByteBuffer.order(ByteOrder.nativeOrder())
         textureBuffer = texByteBuffer.asFloatBuffer()
         textureBuffer.put(texCoords.toFloatArray())
         textureBuffer.position(0)
 
-        // Буфер индексов
         val indexByteBuffer = ByteBuffer.allocateDirect(indices.size * 2)
         indexByteBuffer.order(ByteOrder.nativeOrder())
         indexBuffer = indexByteBuffer.asShortBuffer()

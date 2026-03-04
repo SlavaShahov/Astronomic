@@ -23,7 +23,6 @@ fun PlanetInfoScreen(planetInfo: PlanetInfo) {
     val context = LocalContext.current
     var bitmap by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
 
-    // Загружаем изображение из assets
     LaunchedEffect(planetInfo.imageRes) {
         try {
             val inputStream = context.assets.open(planetInfo.imageRes)
@@ -40,7 +39,6 @@ fun PlanetInfoScreen(planetInfo: PlanetInfo) {
             .verticalScroll(rememberScrollState())
             .padding(16.dp)
     ) {
-        // Заголовок
         Text(
             text = planetInfo.name,
             fontSize = 32.sp,
@@ -49,7 +47,6 @@ fun PlanetInfoScreen(planetInfo: PlanetInfo) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Изображение
         bitmap?.let {
             Image(
                 bitmap = it.asImageBitmap(),
@@ -64,7 +61,6 @@ fun PlanetInfoScreen(planetInfo: PlanetInfo) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Описание
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(4.dp)
@@ -78,7 +74,6 @@ fun PlanetInfoScreen(planetInfo: PlanetInfo) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Характеристики
         Card(
             modifier = Modifier.fillMaxWidth(),
             elevation = CardDefaults.cardElevation(4.dp)
@@ -86,9 +81,8 @@ fun PlanetInfoScreen(planetInfo: PlanetInfo) {
             Column(
                 modifier = Modifier.padding(16.dp)
             ) {
-                Text("Характеристики:", fontSize = 20.sp, style = MaterialTheme.typography.titleLarge)
+                Text("ХАРАКТЕРИСТИКИ", fontSize = 18.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold)
                 Spacer(modifier = Modifier.height(8.dp))
-
                 InfoRow("Диаметр:", planetInfo.diameter)
                 InfoRow("Расстояние от Солнца:", planetInfo.distanceFromSun)
                 InfoRow("Орбитальный период:", planetInfo.orbitalPeriod)

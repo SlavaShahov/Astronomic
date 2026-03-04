@@ -69,8 +69,9 @@ class OpenGLActivity : AppCompatActivity() {
                         // Информация о выбранном объекте
                         Button(
                             onClick = {
+                                val objectName = renderer.getSelectedObjectName()
                                 val intent = Intent(this@OpenGLActivity, PlanetInfoActivity::class.java)
-                                intent.putExtra(PlanetInfoActivity.EXTRA_PLANET_NAME, renderer.getSelectedObjectName())
+                                intent.putExtra(PlanetInfoActivity.EXTRA_PLANET_NAME, objectName)
                                 startActivity(intent)
                             }
                         ) {

@@ -10,20 +10,17 @@ import kotlin.math.*
 
 class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
-    // Фоновый квадрат
     private lateinit var backgroundSquare: BackgroundSquare
     private lateinit var backgroundTextureLoader: TextureLoader
     private var backgroundTextureId = 0
 
-    // Сферы для планет
     private lateinit var sunSphere: TexturedSphere
     private lateinit var planetSphere: TexturedSphere
     private lateinit var moonSphere: TexturedSphere
     private lateinit var selectionCube: SelectionCube
-    private lateinit var saturnRing: SaturnRing  // Кольца Сатурна
+    private lateinit var saturnRing: SaturnRing
     private lateinit var textureLoader: TextureLoader
 
-    // Матрицы
     private val projectionMatrix = FloatArray(16)
     private val viewMatrix = FloatArray(16)
     private val modelMatrix = FloatArray(16)
@@ -36,15 +33,12 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private val minCameraDistance = 15f
     private val maxCameraDistance = 80f
 
-    // Хранилище ID текстур
     private val textureIds = mutableMapOf<String, Int>()
-    private var saturnRingTextureId = 0  // Текстура для колец Сатурна
+    private var saturnRingTextureId = 0
 
-    // Индексы выбранных объектов
-    private var selectedObjectIndex = 3 // Земля по умолчанию
-    private var selectedIsMoon = false  // true если выбрана Луна
+    private var selectedObjectIndex = 3
+    private var selectedIsMoon = false
 
-    // ---------- ДАННЫЕ О ПЛАНЕТАХ ----------
     private val planets = listOf(
         Planet("Солнце", 2.5f, 0f, 0f, 0.5f, "sun.jpg"),
         Planet("Меркурий", 0.4f, 5f, 0.004f, 0.8f, "mercury.jpg"),
@@ -59,19 +53,17 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
         Planet("Нептун", 0.9f, 27f, 0.0004f, 0.8f, "neptune.jpg")
     )
 
-    // ---------- ДАННЫЕ О ЛУНЕ ----------
+
     private val moon = Planet(
         "Луна", 0.2f, 1.8f, 0.0f, 0.1f, "moon.jpg",
         false, false, 0f, 0f, "", true, 3  // parentPlanet = 3 (Земля)
     )
 
-    // Углы вращения
     private val orbitAngles = FloatArray(planets.size) { 0f }
     private val rotationAngles = FloatArray(planets.size) { 0f }
     private var moonAngle = 0f
     private var moonRotation = 0f
 
-    // ---------- МЕТОДЫ УПРАВЛЕНИЯ ----------
 
     fun getSelectedObjectName(): String {
         return if (selectedIsMoon) "Луна" else planets[selectedObjectIndex].name
@@ -79,13 +71,12 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     fun nextObject() {
         if (selectedIsMoon) {
-            // Если сейчас Луна, переходим к следующей планете
             selectedIsMoon = false
             selectedObjectIndex = (moon.parentPlanet + 1) % planets.size
         } else {
             val currentPlanet = planets[selectedObjectIndex]
-            if (currentPlanet.hasMoon && selectedObjectIndex == 3) { // Земля
-                selectedIsMoon = true  // Переходим на Луну
+            if (currentPlanet.hasMoon && selectedObjectIndex == 3) {
+                selectedIsMoon = true
             } else {
                 selectedObjectIndex = (selectedObjectIndex + 1) % planets.size
             }
@@ -94,25 +85,19 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     fun prevObject() {
         if (selectedIsMoon) {
-            // Если сейчас Луна, возвращаемся к Земле
             selectedIsMoon = false
             selectedObjectIndex = moon.parentPlanet
         } else {
             val prevIndex = (selectedObjectIndex - 1 + planets.size) % planets.size
             val prevPlanet = planets[prevIndex]
 
-            if (prevPlanet.hasMoon && prevIndex == 3) { // Земля
+            if (prevPlanet.hasMoon && prevIndex == 3) {
                 selectedIsMoon = true
                 selectedObjectIndex = prevIndex
             } else {
                 selectedObjectIndex = prevIndex
             }
         }
-    }
-
-    fun selectPlanet(index: Int) {
-        selectedObjectIndex = index
-        selectedIsMoon = false
     }
 
     fun handlePinch(scaleFactor: Float) {
@@ -124,19 +109,15 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
         cameraAngleX = (cameraAngleX + dy * 0.5f).coerceIn(5f, 45f)
     }
 
-    // ---------- МЕТОДЫ OpenGL ----------
-
     override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
         GLES20.glEnable(GLES20.GL_BLEND)
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
 
-        // Инициализируем шейдеры
         ShaderManager.initShaders()
         ShaderManager.useProgram()
 
-        // Фон
         backgroundSquare = BackgroundSquare()
         backgroundTextureLoader = TextureLoader(context)
         backgroundTextureId = backgroundTextureLoader.loadTextureFromAsset("galaxy.jpg")
@@ -144,17 +125,14 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
             backgroundTextureId = backgroundTextureLoader.createProceduralTexture()
         }
 
-        // Создаем сферы
         sunSphere = TexturedSphere(64)
         planetSphere = TexturedSphere(48)
         moonSphere = TexturedSphere(32)
         selectionCube = SelectionCube()
 
-        // СОЗДАЕМ КОЛЬЦА ДЛЯ САТУРНА (8 отдельных полосок)
-        val saturn = planets[6] // Сатурн под индексом 6
+        val saturn = planets[6]
         saturnRing = SaturnRing(saturn.ringInnerRadius, saturn.ringOuterRadius, 128, 8)
 
-        // Загружаем текстуры
         textureLoader = TextureLoader(context)
 
         planets.forEach { planet ->
@@ -162,21 +140,15 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
             textureIds[planet.name] = textureId
         }
 
-        // Загружаем текстуру для колец Сатурна
         saturnRingTextureId = textureLoader.loadTextureFromAsset("saturn_ring.jpg")
         if (saturnRingTextureId == 0) {
             saturnRingTextureId = createProceduralRingTexture()  // Создаем процедурную если нет файла
         }
 
-        // Текстура Луны
         val moonTextureId = textureLoader.loadTextureFromAsset("moon.jpg")
         textureIds["Луна"] = moonTextureId
     }
 
-    /**
-     * Создание процедурной текстуры для колец Сатурна
-     * Имитирует полосатую структуру настоящих колец
-     */
     private fun createProceduralRingTexture(): Int {
         val textureIds = IntArray(1)
         GLES20.glGenTextures(1, textureIds, 0)
@@ -192,45 +164,42 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
             val x = i % width
             val y = i / height
 
-            // Базовый цвет - золотисто-коричневый
             var r = 200
             var g = 180
             var b = 150
             var alpha = 180
 
-            // СОЗДАЕМ ПОЛОСЫ РАЗНОЙ ШИРИНЫ И ЦВЕТА
-            val band = (x / 40) % 10  // Каждая полоса шириной ~40 пикселей
+            val band = (x / 40) % 10
 
             when (band) {
-                0, 1 -> { // Кольцо D (самое тусклое)
+                0, 1 -> {
                     r = 140; g = 120; b = 100; alpha = 80
                 }
-                2 -> { // Деление между D и C
+                2 -> {
                     r = 100; g = 90; b = 80; alpha = 40
                 }
-                3, 4 -> { // Кольцо C (полупрозрачное)
+                3, 4 -> {
                     r = 180; g = 160; b = 140; alpha = 140
                 }
-                5 -> { // Деление Кассини (темная полоса)
+                5 -> {
                     r = 120; g = 100; b = 90; alpha = 60
                 }
-                6, 7 -> { // Кольцо B (самое яркое)
+                6, 7 -> {
                     r = 240; g = 220; b = 180; alpha = 220
                 }
-                8 -> { // Деление Энке
+                8 -> {
                     r = 160; g = 140; b = 120; alpha = 80
                 }
-                9 -> { // Кольцо A (внешнее)
+                9 -> {
                     r = 220; g = 200; b = 170; alpha = 200
                 }
             }
 
-            // Добавляем вариации по вертикали (толщина кольца)
+
             if (y < 30 || y > 90) {
-                alpha = (alpha * 0.6).toInt()  // Края более прозрачные
+                alpha = (alpha * 0.6).toInt()
             }
 
-            // Текстурный шум для реалистичности
             val noise = (Math.random() * 20 - 10).toInt()
             r = (r + noise).coerceIn(60, 255)
             g = (g + noise).coerceIn(60, 255)
@@ -256,16 +225,10 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
     override fun onDrawFrame(gl: GL10?) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT or GLES20.GL_DEPTH_BUFFER_BIT)
 
-        // 1. Рисуем фон
         drawBackground()
-
-        // 2. Рисуем солнечную систему (планеты и Луну)
         drawSolarSystem()
     }
 
-    /**
-     * Отрисовка фонового изображения галактики
-     */
     private fun drawBackground() {
         GLES20.glDisable(GLES20.GL_DEPTH_TEST)
         GLES20.glDepthMask(false)
@@ -292,11 +255,7 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
     }
 
-    /**
-     * Отрисовка всей солнечной системы
-     */
     private fun drawSolarSystem() {
-        // Вычисляем позицию камеры на основе углов и расстояния
         val camX = cameraDistance * sin(Math.toRadians(cameraAngleY.toDouble())).toFloat() *
                 cos(Math.toRadians(cameraAngleX.toDouble())).toFloat()
         val camY = cameraDistance * sin(Math.toRadians(cameraAngleX.toDouble())).toFloat()
@@ -308,7 +267,6 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
             0f, 0f, 0f,
             0f, 1f, 0f)
 
-        // Рисуем все планеты
         for (i in planets.indices) {
             val planet = planets[i]
 
@@ -325,20 +283,16 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
                 drawPlanet(planet, x, z, rotationAngles[i])
 
-                // Рисуем Луну для Земли
                 if (planet.hasMoon) {
                     drawMoon(x, z)
                 }
             }
         }
 
-        // Рисуем выделяющий куб поверх всего
         drawSelectionCube()
     }
 
-    /**
-     * Отрисовка отдельной планеты
-     */
+
     private fun drawPlanet(planet: Planet, x: Float, z: Float, rotation: Float) {
         // Матрица для планеты
         Matrix.setIdentityM(modelMatrix, 0)
@@ -360,35 +314,24 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
             planetSphere.draw(mvpMatrix, textureId)
         }
 
-        // Если у планеты есть кольца (Сатурн), рисуем их
         if (planet.hasRings) {
             drawRings(planet, x, z, rotation)
         }
     }
 
-    /**
-     * Отрисовка колец Сатурна
-     * Кольца состоят из нескольких полосок с разной прозрачностью
-     */
     private fun drawRings(planet: Planet, x: Float, z: Float, rotation: Float) {
-        // Рисуем три слоя для создания эффекта толщины
         for (offset in -1..1) {
             Matrix.setIdentityM(modelMatrix, 0)
-            Matrix.translateM(modelMatrix, 0, x, offset * 0.03f, z)  // Небольшая толщина
-            Matrix.rotateM(modelMatrix, 0, 27f, 1f, 0f, 0f)  // Наклон колец Сатурна ~27°
+            Matrix.translateM(modelMatrix, 0, x, offset * 0.03f, z)
+            Matrix.rotateM(modelMatrix, 0, 27f, 1f, 0f, 0f)
             Matrix.rotateM(modelMatrix, 0, rotation, 0f, 1f, 0f)  // Вращение вместе с планетой
 
             Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0)
             Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0)
 
-            // Разная прозрачность для разных слоев
             if (offset == 0) {
-                // Центральный слой - нормальная прозрачность
                 saturnRing.draw(mvpMatrix, saturnRingTextureId)
             } else {
-                // Верхний и нижний слои - более прозрачные
-                // Для изменения прозрачности можно использовать uniform-переменную в шейдере
-                // или временно изменить параметры текстуры
                 GLES20.glUniform1f(GLES20.glGetUniformLocation(ShaderManager.program, "uAlpha"), 0.3f)
                 saturnRing.draw(mvpMatrix, saturnRingTextureId)
                 GLES20.glUniform1f(GLES20.glGetUniformLocation(ShaderManager.program, "uAlpha"), 1.0f)
@@ -396,9 +339,7 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
         }
     }
 
-    /**
-     * Отрисовка Луны (вращается вокруг Земли перпендикулярно эклиптике)
-     */
+
     private fun drawMoon(earthX: Float, earthZ: Float) {
         moonAngle += 0.05f
         moonRotation += moon.rotationSpeed
@@ -422,9 +363,7 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
         moonSphere.draw(mvpMatrix, moonTextureId)
     }
 
-    /**
-     * Отрисовка выделяющего куба вокруг выбранного объекта (планеты или Луны)
-     */
+
     private fun drawSelectionCube() {
         val posX: Float
         val posY: Float
@@ -443,7 +382,6 @@ class PlanetRenderer(private val context: Context) : GLSurfaceView.Renderer {
             posZ = earthZ + moon.distance * cos(moonAngle.toDouble()).toFloat()
             size = moon.size * 1.5f
         } else {
-            // Позиция планеты
             val planet = planets[selectedObjectIndex]
             if (selectedObjectIndex == 0) {
                 posX = 0f

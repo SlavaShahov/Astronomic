@@ -3,7 +3,7 @@ package com.example.astronomic
 data class PlanetInfo(
     val name: String,
     val description: String,
-    val imageRes: String, // имя файла изображения в assets
+    val imageRes: String,
     val diameter: String,
     val distanceFromSun: String,
     val orbitalPeriod: String,
