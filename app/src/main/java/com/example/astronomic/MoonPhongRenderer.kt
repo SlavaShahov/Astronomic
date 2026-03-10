@@ -11,11 +11,20 @@ import java.nio.ShortBuffer
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 import kotlin.math.*
-
-/**
- * Рендерер для 3D модели Луны с освещением по модели Фонга
- * Луна вращается вокруг своей оси (как планеты в солнечной системе)
- */
+/*
+* Модель Фонга - это способ расчета освещения, который учитывает 3 компоненты:
+*
+* 1. Ambient (Фоновое освещение) - свет, который падает отовсюду равномерно
+*    Даже в тени объект немного виден
+*
+* 2. Diffuse (Диффузное освещение) - свет, который рассеивается во все стороны
+*    Зависит от угла падения света на поверхность
+*
+* 3. Specular (Зеркальное освещение) - блики
+*    Зависит от угла между отраженным светом и направлением на камеру
+*
+* ФОРМУЛА: I = Ambient + Diffuse + Specular
+*/
 class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
     // Матрицы
@@ -43,9 +52,6 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
     private var program = 0
     private var textureId = 0
 
-    /**
-     * Создание сферы с текстурными координатами и нормалями
-     */
     private fun createSphere(radius: Float, segments: Int = 48) {
         val vertices = mutableListOf<Float>()
         val normals = mutableListOf<Float>()
@@ -53,33 +59,28 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
         val indices = mutableListOf<Short>()
 
         for (i in 0..segments) {
-            val phi = PI * i / segments  // широта (0 до PI)
+            val phi = PI * i / segments
 
             for (j in 0..segments) {
-                val theta = 2 * PI * j / segments  // долгота (0 до 2PI)
+                val theta = 2 * PI * j / segments
 
-                // Сферические координаты
                 val x = (sin(phi) * cos(theta)).toFloat() * radius
                 val y = (cos(phi)).toFloat() * radius
                 val z = (sin(phi) * sin(theta)).toFloat() * radius
 
-                // Позиция вершины
                 vertices.add(x)
                 vertices.add(y)
                 vertices.add(z)
 
-                // Нормаль (для сферы нормаль = позиция / радиус)
                 normals.add(x / radius)
                 normals.add(y / radius)
                 normals.add(z / radius)
 
-                // Текстурные координаты
                 texCoords.add(j.toFloat() / segments)
                 texCoords.add(i.toFloat() / segments)
             }
         }
 
-        // Индексы для треугольников
         for (i in 0 until segments) {
             for (j in 0 until segments) {
                 val p1 = (i * (segments + 1) + j).toShort()
@@ -98,28 +99,24 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         indexCount = indices.size
 
-        // Создаем буфер вершин
         val vbb = ByteBuffer.allocateDirect(vertices.size * 4)
         vbb.order(ByteOrder.nativeOrder())
         vertexBuffer = vbb.asFloatBuffer()
         vertexBuffer?.put(vertices.toFloatArray())
         vertexBuffer?.position(0)
 
-        // Создаем буфер нормалей
         val nbb = ByteBuffer.allocateDirect(normals.size * 4)
         nbb.order(ByteOrder.nativeOrder())
         normalBuffer = nbb.asFloatBuffer()
         normalBuffer?.put(normals.toFloatArray())
         normalBuffer?.position(0)
 
-        // Создаем буфер текстурных координат
         val tbb = ByteBuffer.allocateDirect(texCoords.size * 4)
         tbb.order(ByteOrder.nativeOrder())
         textureBuffer = tbb.asFloatBuffer()
         textureBuffer?.put(texCoords.toFloatArray())
         textureBuffer?.position(0)
 
-        // Создаем буфер индексов
         val ibb = ByteBuffer.allocateDirect(indices.size * 2)
         ibb.order(ByteOrder.nativeOrder())
         indexBuffer = ibb.asShortBuffer()
@@ -139,7 +136,6 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glEnable(GLES20.GL_DEPTH_TEST)
         GLES20.glEnable(GLES20.GL_CULL_FACE)
 
-        // Создаем сферу радиусом 1
         createSphere(1.0f, 48)
 
         // Вершинный шейдер
@@ -175,19 +171,15 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
             varying vec3 v_normal;
             
             void main() {
-                // Нормализуем нормаль
                 vec3 normal = normalize(v_normal);
                 
-                // Вектор к источнику света
                 vec3 lightVector = normalize(u_lightPosition - v_vertex);
                 
-                // Вектор к камере
                 vec3 viewVector = normalize(u_camera - v_vertex);
                 
-                // Отраженный вектор
                 vec3 reflectVector = reflect(-lightVector, normal);
                 
-                // Модель Фонга
+                // Параметры модели Фонга
                 float ambient = 0.2;
                 float k_diffuse = 0.8;
                 float k_specular = 0.5;
@@ -205,10 +197,8 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
                 // Суммарная яркость
                 float brightness = ambient + diffuse + specular;
                 
-                // Цвет из текстуры
                 vec4 texColor = texture2D(u_texture, v_texCoord);
                 
-                // Применяем освещение
                 gl_FragColor = vec4(texColor.rgb * brightness, texColor.a);
             }
         """.trimIndent()
@@ -218,7 +208,6 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
         GLES20.glAttachShader(program, loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentShaderCode))
         GLES20.glLinkProgram(program)
 
-        // Загружаем текстуру Луны
         textureId = TextureLoader(context).loadTextureFromAsset("moon.jpg")
         if (textureId == 0) {
             textureId = TextureLoader(context).loadTextureFromAsset("moon_detail.jpg")
@@ -237,23 +226,18 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
 
         GLES20.glUseProgram(program)
 
-        // ВРАЩЕНИЕ ВОКРУГ СВОЕЙ ОСИ
         rotationAngle += 0.8f
         if (rotationAngle > 360f) rotationAngle -= 360f
 
-        // Матрица модели - СНАЧАЛА отодвигаем, ПОТОМ вращаем
         Matrix.setIdentityM(modelMatrix, 0)
-        Matrix.translateM(modelMatrix, 0, 0f, 0f, -3f)  // Сначала отодвигаем от камеры
-        Matrix.rotateM(modelMatrix, 0, rotationAngle, 0f, 1f, 0f)  // Потом вращаем вокруг оси Y
+        Matrix.translateM(modelMatrix, 0, 0f, 0f, -3f)
+        Matrix.rotateM(modelMatrix, 0, rotationAngle, 0f, 1f, 0f)
 
-        // Матрица вида (камера смотрит на центр)
         Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 5f, 0f, 0f, 0f, 0f, 1f, 0f)
 
-        // Итоговая матрица MVP
         Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0)
         Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0)
 
-        // Uniform-переменные
         val mvpHandle = GLES20.glGetUniformLocation(program, "u_MVPMatrix")
         GLES20.glUniformMatrix4fv(mvpHandle, 1, false, mvpMatrix, 0)
 
@@ -266,7 +250,6 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
         val textureHandle = GLES20.glGetUniformLocation(program, "u_texture")
         GLES20.glUniform1i(textureHandle, 0)
 
-        // Атрибуты
         val vertexHandle = GLES20.glGetAttribLocation(program, "a_vertex")
         GLES20.glEnableVertexAttribArray(vertexHandle)
         vertexBuffer?.let {
@@ -285,16 +268,13 @@ class MoonPhongRenderer(private val context: Context) : GLSurfaceView.Renderer {
             GLES20.glVertexAttribPointer(texCoordHandle, 2, GLES20.GL_FLOAT, false, 0, it)
         }
 
-        // Текстура
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId)
 
-        // Рисуем
         indexBuffer?.let {
             GLES20.glDrawElements(GLES20.GL_TRIANGLES, indexCount, GLES20.GL_UNSIGNED_SHORT, it)
         }
 
-        // Отключаем атрибуты
         GLES20.glDisableVertexAttribArray(vertexHandle)
         GLES20.glDisableVertexAttribArray(normalHandle)
         GLES20.glDisableVertexAttribArray(texCoordHandle)

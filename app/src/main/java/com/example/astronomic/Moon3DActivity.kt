@@ -17,10 +17,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/**
- * Activity для отображения 3D модели Луны с освещением по модели Фонга
- * Луна вращается вокруг своей оси
- */
+
 class Moon3DActivity : AppCompatActivity() {
 
     private lateinit var glSurfaceView: GLSurfaceView
@@ -31,23 +28,19 @@ class Moon3DActivity : AppCompatActivity() {
 
         supportActionBar?.hide()
 
-        // Создаем рендерер
         renderer = MoonPhongRenderer(this)
 
-        // Настраиваем GLSurfaceView
         glSurfaceView = GLSurfaceView(this)
         glSurfaceView.setEGLContextClientVersion(2)
         glSurfaceView.setRenderer(renderer)
         glSurfaceView.renderMode = GLSurfaceView.RENDERMODE_CONTINUOUSLY
 
-        // Создаем ComposeView для отображения информации поверх OpenGL
         val composeView = ComposeView(this)
         composeView.setContent {
             MaterialTheme {
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    // Верхняя карточка с информацией
                     Card(
                         modifier = Modifier
                             .align(Alignment.TopCenter)
@@ -73,7 +66,6 @@ class Moon3DActivity : AppCompatActivity() {
                         }
                     }
 
-                    // Нижняя карточка с пояснениями
                     Card(
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
@@ -96,7 +88,6 @@ class Moon3DActivity : AppCompatActivity() {
             }
         }
 
-        // Создаем контейнер и добавляем оба view
         val layout = FrameLayout(this)
         layout.addView(glSurfaceView)
         layout.addView(composeView)
